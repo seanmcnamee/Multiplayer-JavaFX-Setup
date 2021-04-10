@@ -1,0 +1,6 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "c:\\Users\\Sean\\Documents\\Programming\\Java\\Games\\Multiplayer-JavaFX-Setup\\shared\\shared.jar"
+    ]
+}
