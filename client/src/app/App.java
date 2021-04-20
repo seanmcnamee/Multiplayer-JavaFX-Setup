@@ -1,9 +1,15 @@
+package app;
+
+import java.util.Hashtable;
 
 import communications.ChatClient;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Point2D;
+import javafx.geometry.Point3D;
 import javafx.scene.Camera;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
 import javafx.scene.paint.Color;
@@ -11,15 +17,20 @@ import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Box;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
+import shared.LocationUpdate;
+import shared.UserIdentifier;
 
 public class App extends Application {
     
     private static final int WIDTH = 1400;
     private static final int HEIGHT = 800;
+    private Group group;
+    private Hashtable<UserIdentifier, Node> users;
 
     @Override
     public void start(Stage stage) throws Exception {
-        Group group = new Group();
+        this.users = new Hashtable<UserIdentifier, Node>();
+        group = new Group();
 
         Box[] boxes = {
             new Box(10, 10, 10), new Box(10, 10, 10), new Box(10, 10, 10), new Box(10, 10, 10),
@@ -110,7 +121,8 @@ public class App extends Application {
         camera.translateZProperty().set(-700);
         camera.setNearClip(.0001);
         camera.setFarClip(100000);
-        new CameraLook(camera, stage);
+        connectToServer(camera, stage);
+        
         
         
         Scene scene = new Scene(group, WIDTH, HEIGHT, true);//, SceneAntialiasing.BALANCED);
@@ -122,19 +134,42 @@ public class App extends Application {
         stage.setScene(scene);
         stage.show();
 
-        connectToServer();
+        
     }
 
-    private void connectToServer() {
+    private void connectToServer(Camera camera, Stage stage) {
 
         new Thread() {
             public void start() {
                 System.out.println("Connecting...");
-                ChatClient chat = new ChatClient("Group 1");
+                ChatClient chat = new ChatClient("Sean", "Group 1", App.this);
+                new CameraLook(camera, stage, chat);
                 chat.execute();
-                chat.writeToThread("Hello there");
             }
         }.start();
         
+    }
+
+    public void updateUser(LocationUpdate update) {
+        Platform.runLater(new Runnable() {
+            public void run() {
+                if (!App.this.users.containsKey(update.getUserInfo())) {
+                    addUser(update.getUserInfo());
+                }
+        
+                //this.users.get(update.getUserInfo()).getTransforms().clear();
+                Point3D location = update.getPosition();
+                App.this.users.get(update.getUserInfo()).setTranslateX(location.getX());
+                App.this.users.get(update.getUserInfo()).setTranslateY(location.getY());
+                App.this.users.get(update.getUserInfo()).setTranslateZ(location.getZ());
+            }
+        });
+    }
+
+    private void addUser(UserIdentifier newUser) {
+        Box newUserBox = new Box(30, 30, 30);
+        newUserBox.setMaterial(new PhongMaterial(newUser.getColor()));
+        this.group.getChildren().add(newUserBox);
+        this.users.put(newUser, newUserBox);
     }
 }

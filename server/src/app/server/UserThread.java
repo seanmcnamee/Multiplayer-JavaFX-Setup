@@ -4,7 +4,10 @@ import java.io.*;
 import java.net.*;
 
 import app.GUI.Pages.MainPage;
-import shared.SimpleMessage;
+import shared.UserIdentifier;
+import shared.LocationUpdate;
+
+import javafx.geometry.Point3D;
  
 /**
  * This thread handles connection for each connected client, so the server
@@ -18,7 +21,7 @@ import shared.SimpleMessage;
  */
 public class UserThread extends Thread {
     private Socket socket;
-    private String username, group; //The unique identifier for a thread
+    private UserIdentifier userInfo; //The unique identifier for a thread
     private ChatServer server; //Because it has to broadcast messages to everyone
 
     private final String SERVER_INFO = "SERVER";
@@ -51,49 +54,43 @@ public class UserThread extends Thread {
             ObjectInputStream reader = new ObjectInputStream(input);
  
             try {
-                SimpleMessage userName = (SimpleMessage) reader.readObject();
-                SimpleMessage groupName = (SimpleMessage) reader.readObject();
-                this.username = userName.getSomeMessage();
-                this.group = groupName.getSomeMessage();
+                LocationUpdate startingLocation = (LocationUpdate) reader.readObject();
+                this.userInfo = startingLocation.getUserInfo();
+                server.broadcast(startingLocation, this); //Send over new user
             } catch (ClassNotFoundException e) {
                 System.out.println("Handshake failed");
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            
-
-            printUsers();
-            
  
-            String serverMessage = "New user connected to " + group + ": " + username;
+            String serverMessage = "New user connected to " + this.userInfo.getGroupName() + ": " + this.userInfo.getUserName();
             guiPage.addConnection(serverMessage);
-
-
-            server.broadcast(SERVER_INFO + serverMessage, this);
  
-            SimpleMessage clientMessage = null;
+            LocationUpdate locationUpdate = null;
             
             //Broadcast any recieved message. Note the variable names
             do {
                 try {
-                    clientMessage = (SimpleMessage) reader.readObject();
-                    serverMessage = clientMessage.getSomeMessage() + " -- " + clientMessage.getSomeNum();
+                    locationUpdate = (LocationUpdate) reader.readObject();
+                    
+                    serverMessage = locationUpdate.getPosition().toString();
+                    
                 } catch (ClassNotFoundException e) {
                     serverMessage = "Failed to reader client message";
                     e.printStackTrace();
                 } //In from the client
                 
                 guiPage.addBroadcast(serverMessage);
-                server.broadcast(USER_MESSAGE + serverMessage, this); //Out from the server
+                server.broadcast(locationUpdate, this); //Send over updated location
  
-            } while (!clientMessage.equals(ENDING_STRING));
+            } while (locationUpdate != null);
  
             server.removeUser(this);
             socket.close();
  
-            serverMessage = username + " has quitted.";
+            serverMessage = userInfo.getUserName() + " has quitted.";
             guiPage.addConnection(serverMessage);
-            server.broadcast(SERVER_INFO + serverMessage, this);
+            server.broadcast(new LocationUpdate(new Point3D(0, 0, 0), userInfo), this);
  
         } catch (IOException ex) {
             System.out.println("Error in UserThread: " + ex.getMessage());
@@ -102,47 +99,25 @@ public class UserThread extends Thread {
         }
     }
  
-    /**
-     * Sends a messaged baesd on if other users are connected
-     * 
-     * TODO send a list of online users to the newly connected user.
-     * We can send over other data types as well (character array buffers)
-     */
-    void printUsers() {
-        if (server.hasUsers()) {
-            sendMessage(SERVER_INFO + "Welcome to " + group);
-        } else {
-            sendMessage(SERVER_INFO + "No other users connected");
-        }
-    }
 
     /**
      * Sends a message to the client.
      */
-    void sendMessage(String message) {
+    void sendMessage(LocationUpdate update) {
         try {
-            writer.writeObject(new SimpleMessage(-1, message));
+            writer.writeObject(update);
         } catch (IOException e) {
-            guiPage.addConnection("Failed to send message: " + message);
+            guiPage.addConnection("Failed to send message: " + update);
             e.printStackTrace();
         }
     }
 
     public String getUserName() {
-        return username;
-    }
-
-    public void setUserName(String name) {
-        this.username = name;
+        return this.userInfo.getUserName();
     }
 
     public String getGroup() {
-        return group;
+        return this.userInfo.getGroupName();
     }
-
-    public void setGroup(String group) {
-        this.group = group;
-    }
-
     
 }

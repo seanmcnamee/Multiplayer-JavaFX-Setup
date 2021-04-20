@@ -3,6 +3,8 @@ package communications;
 import java.io.*;
 import java.net.*;
 
+import app.App;
+import shared.LocationUpdate;
 import shared.SimpleMessage;
  
 /**
@@ -15,22 +17,16 @@ import shared.SimpleMessage;
  */
 public class ReadThread extends Thread {
     private ObjectInputStream reader;
+    private App main;
  
     /**
      * Instantiate the reader for communication from the server
      */
-    public ReadThread(Socket socket) {
+    public ReadThread(Socket socket, App main) {
+        this.main = main;
         try {
-            System.out.println("Trying to get inputstream");
             InputStream input = socket.getInputStream();
-
-            System.out.println("Trying to get object input stream");
-
-            //reader = new BufferedReader(new InputStreamReader(input));
             reader = new ObjectInputStream(input);
-            
-
-            System.out.println("Got the readthread initialized");
         } catch (IOException ex) {
             System.out.println("Error getting input stream: " + ex.getMessage());
             ex.printStackTrace();
@@ -48,13 +44,10 @@ public class ReadThread extends Thread {
         System.out.println("Starting the run");
         while (true) {
             try {
-                //SimpleMessage message = (SimpleMessage) (reader.readObject());
-                //System.out.println(message.getSomeNum() + " -- " + message.getSomeMessage());
-
+                
                 System.out.println("Reading from server...");
-                //String message = reader.readLine();
-                SimpleMessage message = (SimpleMessage) reader.readObject();
-                System.out.println(message.getSomeMessage());
+                LocationUpdate serverMessage = (LocationUpdate) reader.readObject();
+                this.main.updateUser((LocationUpdate) serverMessage);
                 
             } catch (IOException ex) {
                 System.out.println("Error reading from server: " + ex.getMessage());

@@ -9,7 +9,7 @@
             "name": "Launch App",
             "request": "launch",
             "vmArgs": "--module-path /Users/Sean/Documents/Programming/Java/Games/javafx-sdk-11.0.2/lib --add-modules javafx.controls,javafx.fxml",
-            "mainClass": "App",
+            "mainClass": "app.App",
             "projectName": "client_d6c6a186"
         }
     ]

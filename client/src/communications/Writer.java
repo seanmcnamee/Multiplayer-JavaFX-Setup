@@ -3,7 +3,7 @@ package communications;
 import java.io.*;
 import java.net.*;
 
-import shared.SimpleMessage;
+import shared.LocationUpdate;
  
 /**
  * This thread is responsible for reading user's input and send it to the server.
@@ -48,10 +48,10 @@ public class Writer {
      * Message to be sent through the socket to the server
      * @param message
      */
-    public void write(String message) {
-        System.out.println("Writing message: " + message);
+    public void write(LocationUpdate update) {
+        System.out.println("Writing message: " + update);
         try {
-            writer.writeObject(new SimpleMessage(count++, message));
+            writer.writeObject(update);
         } catch (IOException e) {
             System.out.println("Problem writing Object to socket");
             e.printStackTrace();

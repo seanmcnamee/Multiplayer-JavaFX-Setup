@@ -1,7 +1,9 @@
+package app;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import communications.ChatClient;
 import javafx.animation.AnimationTimer;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectPropertyBase;
@@ -15,6 +17,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.transform.Rotate;
 import javafx.stage.Stage;
+import shared.LocationUpdate;
 
 public class CameraLook {
     private Camera camera;
@@ -30,17 +33,20 @@ public class CameraLook {
 
     private List<EventSet> eventSets;
 
-    public CameraLook(Camera camera, Stage stage) {
-        this(camera, stage, new ArrayList<EventSet>());
+    private ChatClient chatter;
+
+    public CameraLook(Camera camera, Stage stage, ChatClient chat) {
+        this(camera, stage, chat, new ArrayList<EventSet>());
     }
 
-    public CameraLook(Camera camera, Stage stage, EventSet... eventSets) {
-        this(camera, stage, Arrays.asList(eventSets));
+    public CameraLook(Camera camera, Stage stage, ChatClient chat, EventSet... eventSets) {
+        this(camera, stage, chat, Arrays.asList(eventSets));
     }
 
-    public CameraLook(Camera camera, Stage stage, List<EventSet> eventSets) {
+    public CameraLook(Camera camera, Stage stage, ChatClient chat, List<EventSet> eventSets) {
         this.camera = camera;
         this.stage = stage;
+        this.chatter = chat;
         this.eventSets = eventSets;
         this.perpendicularToSightAxis = new SimpleObjectProperty<Point3D>(Rotate.X_AXIS);
         this.angleAboutPerpendicularSight = new SimpleDoubleProperty(0);
@@ -147,6 +153,8 @@ public class CameraLook {
             this.camera.translateXProperty().set(camera.getTranslateX() + scrollDistance*directions.getX()*Math.signum(event.getDeltaY()));
             this.camera.translateYProperty().set(camera.getTranslateY() + scrollDistance*directions.getY()*Math.signum(event.getDeltaY()));
             this.camera.translateZProperty().set(camera.getTranslateZ() + scrollDistance*directions.getZ()*Math.signum(event.getDeltaY()));
+            
+            this.chatter.writeToThread(new LocationUpdate(new javafx.geometry.Point3D(camera.getTranslateX(), camera.getTranslateY(), camera.getTranslateZ())));
         });
     }
 

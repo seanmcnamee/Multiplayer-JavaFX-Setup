@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.*;
 
 import app.GUI.Pages.MainPage;
+import shared.LocationUpdate;
 
 /**
  * This is the chat server program.
@@ -55,13 +56,13 @@ public class ChatServer {
     }
  
     /**
-     * Delivers a message from one user to others (broadcasting) in the same group
+     * Delivers an update from one user to others (broadcasting) in the same group
      */
-    void broadcast(String message, UserThread sendingClient) {
+    void broadcast(LocationUpdate update, UserThread sendingClient) {
         for (UserThread aUser : userThreads) {
-            //if (aUser != sendingClient && aUser.getGroup().equals(sendingClient.getGroup())) {
-                aUser.sendMessage(message);
-            //}
+            if (aUser != sendingClient && aUser.getGroup().equals(sendingClient.getGroup())) {
+                aUser.sendMessage(update);
+            }
         }
     }
  

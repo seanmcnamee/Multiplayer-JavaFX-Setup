@@ -2,7 +2,14 @@ package communications;
 
 import java.io.IOException;
 import java.net.Socket;
+
+import javafx.geometry.Point3D;
+import javafx.scene.paint.Color;
 import java.net.UnknownHostException;
+
+import app.App;
+import shared.LocationUpdate;
+import shared.UserIdentifier;
 
 /**
  * The ChatClient deals with overall communication with the server through the socket.
@@ -19,17 +26,19 @@ public class ChatClient {
     private int port;
 
     //To identify this client
-    private String groupName;
+    private UserIdentifier id;
+    private App main;
 
     //To update the GUI and server with messages
     private Writer toThread; //Sending info to the server
     
  
-    public ChatClient(String groupName) {
+    public ChatClient(String userName, String groupName, App main) {
         //this.hostname = "23.96.54.163";
         this.hostname = "localhost";
         this.port = 42069;
-        this.groupName = groupName;
+        this.main = main;
+        this.id = new UserIdentifier(userName, groupName, new Color(Math.random(), Math.random(), Math.random(), 1));
     }
  
     /**
@@ -47,17 +56,11 @@ public class ChatClient {
             toThread = new Writer(socket);
  
             System.out.println("Starting reading thread");
-            new ReadThread(socket).start();
+            new ReadThread(socket, this.main).start();
 
-            
-
-            System.out.println("About to send name");
-            writeToThread("Sean"); //This will be the username
-
-            System.out.println("About to send group");
-            writeToThread(groupName);
-            
- 
+            System.out.println("Identifying client to server");
+            writeToThread(this.id);
+             
         } catch (UnknownHostException ex) {
             System.out.println("Server not found: " + ex.getMessage());
         } catch (IOException ex) {
@@ -65,13 +68,21 @@ public class ChatClient {
         }
     }
 
+    private void writeToThread(UserIdentifier identifier) {
+        if (toThread != null) {
+            System.out.println("Writing to socket");
+            toThread.write(new LocationUpdate(new Point3D(0, 0, 0), identifier));
+        }   
+    }
+
     /**
      * Use the Writer to communicate through the socket with the server
      */
-    public void writeToThread(String message) {
+    public void writeToThread(LocationUpdate update) {
+        update.setUserInfo(this.id);
         if (toThread != null) {
             System.out.println("Writing to socket");
-            toThread.write(message);
+            toThread.write(update);
         }   
     }
 
